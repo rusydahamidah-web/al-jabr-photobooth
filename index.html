@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Al Jabr Concert Photobooth</title>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #153e5e;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+h1 { font-size: 25px; }
+
+#video {
+  width: 90%;
+  max-width: 850px;
+  border: 4px solid #e8a323;
+  border-radius: 12px;
+  transform: scaleX(-1);
+}
+
+#canvas, #result { display: none; }
+
+button {
+  padding: 15px 25px;
+  margin: 10px;
+  border: none;
+  border-radius: 10px;
+  background: #e8a323;
+  color: #153e5e;
+  font-weight: bold;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+#photo {
+  width: 90%;
+  max-width: 850px;
+}
+
+#qr {
+  background: white;
+  padding: 12px;
+  width: 200px;
+  margin: 20px auto;
+}
+
+#status { padding: 12px; }
+</style>
+</head>
+
+<body>
+
+<h1>AL JABR CONCERT PHOTOBOOTH</h1>
+
+<div id="cameraArea">
+  <video id="video" autoplay playsinline muted></video>
+  <br>
+  <button id="start">START CAMERA</button>
+  <button id="capture" disabled>TAKE PHOTO</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div id="result">
+  <img id="photo">
+  <h2>Your photo is ready!</h2>
+  <div id="qr"></div>
+  <p>Scan to download your photo</p>
+  <a id="download" target="_blank">Download Photo</a>
+  <br>
+  <button id="next">NEXT GUEST</button>
+</div>
+
+<p id="status">Welcome to our concert!</p>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let stream;
+let background = new Image();
+let photoData = "";
+
+background.src = "background.png";
+
+document.getElementById("start").onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    document.getElementById("capture").disabled = false;
+    document.getElementById("status").textContent =
+      "Camera ready!";
+
+  } catch (error) {
+    document.getElementById("status").textContent =
+      "Camera error: " + error.message;
+  }
+};
+
+document.getElementById("capture").onclick = async () => {
+
+  if (!background.complete || !background.naturalWidth) {
+    alert("Please wait for background to load.");
+    return;
+  }
+
+  const captureBtn = document.getElementById("capture");
+  captureBtn.disabled = true;
+
+  // Countdown
+  const status = document.getElementById("status");
+
+  for (let i = 3; i > 0; i--) {
+    status.textContent = "Get ready... " + i;
+    await new Promise(resolve => setTimeout(resolve, 800));
+  }
+
+  canvas.width = 1800;
+  canvas.height = 1200;
+
+  // Concert background
+  ctx.drawImage(background, 0, 0, 1800, 1200);
+
+  // Photo placement
+  const x = 250, y = 390, w = 1300, h = 500;
+
+  // Crop camera image to fit
+  const sw = video.videoWidth;
+  const sh = video.videoHeight;
+  const ratio = Math.max(w / sw, h / sh);
+
+  const cropW = w / ratio;
+  const cropH = h / ratio;
+  const sx = (sw - cropW) / 2;
+  const sy = (sh - cropH) / 2;
+
+  ctx.save();
+  ctx.translate(x + w, y);
+  ctx.scale(-1, 1);
+
+  ctx.drawImage(
+    video,
+    sx, sy, cropW, cropH,
+    0, 0, w, h
+  );
+
+  ctx.restore();
+
+  // Gold border
+  ctx.strokeStyle = "#e8a323";
+  ctx.lineWidth = 7;
+  ctx.strokeRect(x, y, w, h);
+
+  photoData = canvas.toDataURL("image/jpeg", 0.9);
+
+  document.getElementById("photo").src = photoData;
+
+  document.getElementById("cameraArea").style.display = "none";
+  document.getElementById("result").style.display = "block";
+
+  status.textContent = "Sending photo to Google Drive...";
+
+  // Send photo to Google Apps Script window
+  if (!window.opener) {
+    status.textContent =
+      "Please open this camera from the Apps Script launcher.";
+    return;
+  }
+
+  window.opener.postMessage({
+    type: "SAVE_PHOTO",
+    data: photoData,
+    filename: "AlJabr_Concert_" + Date.now() + ".jpg"
+  }, "*");
+};
+
+// Receive upload result from Apps Script
+window.addEventListener("message", event => {
+
+  if (event.data.type === "UPLOAD_RESULT") {
+
+    if (event.data.success) {
+
+      document.getElementById("qr").innerHTML = "";
+
+      new QRCode(
+        document.getElementById("qr"),
+        {
+          text: event.data.downloadUrl,
+          width: 180,
+          height: 180
+        }
+      );
+
+      document.getElementById("download").href =
+        event.data.downloadUrl;
+
+      document.getElementById("status").textContent =
+        "Saved! Scan your QR Code.";
+
+    } else {
+      document.getElementById("status").textContent =
+        "Upload failed. Please ask the event team.";
+    }
+  }
+});
+
+document.getElementById("next").onclick = () => {
+  document.getElementById("result").style.display = "none";
+  document.getElementById("cameraArea").style.display = "block";
+
+  document.getElementById("capture").disabled = false;
+  document.getElementById("status").textContent =
+    "Ready for the next guest!";
+};
+
+</script>
+</body>
+</html>
