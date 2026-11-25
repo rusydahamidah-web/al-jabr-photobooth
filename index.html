@@ -119,6 +119,58 @@ button:disabled {
     padding: 12px 18px;
   }
 }
+/* FULL SCREEN CAMERA */
+
+.camera-fullscreen #cameraStage {
+  position: fixed;
+  inset: 0;
+  width: min(100vw, 150vh);
+  height: min(100vh, 66.6667vw);
+  max-width: none;
+  aspect-ratio: 3 / 2;
+  margin: auto;
+  border-radius: 0;
+  z-index: 100;
+}
+
+/* HIDE TITLE */
+
+.camera-fullscreen h1 {
+  display: none;
+}
+
+/* BUTTON POSITION */
+
+#cameraStage button {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  margin: 0;
+}
+
+/* HIDE START BUTTON AFTER CAMERA STARTS */
+
+.camera-fullscreen #start {
+  display: none;
+}
+
+/* COUNTDOWN CENTER */
+
+#countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 4;
+  font-size: clamp(80px, 15vw, 180px);
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+  pointer-events: none;
+}
 </style>
 </head>
 
@@ -126,19 +178,15 @@ button:disabled {
 
 <h1>AL JABR CONCERT PHOTOBOOTH</h1>
 
-<div id="cameraArea">
+<div id="cameraStage">
 
-  <div id="cameraStage">
+  <video id="video" autoplay playsinline muted></video>
 
-    <!-- CAMERA LAYER -->
-    <video id="video" autoplay playsinline muted></video>
+  <img id="frameOverlay"
+       src="background.png"
+       alt="Concert Frame">
 
-    <!-- FRAME OVERLAY -->
-    <img id="frameOverlay"
-         src="background.png"
-         alt="Concert Frame">
-
-  </div>
+  <div id="countdown"></div>
 
   <button id="start">START CAMERA</button>
   <button id="capture" disabled>TAKE PHOTO</button>
@@ -184,6 +232,13 @@ let isCapturing = false;
 // START CAMERA
 
 document.getElementById("start").onclick = async () => {
+
+  // ENTER FULL SCREEN
+  document.body.classList.add("camera-fullscreen");
+
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
 
   try {
 
@@ -248,15 +303,19 @@ document.getElementById("capture").onclick = async () => {
 
   // COUNTDOWN
 
-  for (let i = 3; i > 0; i--) {
+  const countdown = document.getElementById("countdown");
 
-    status.textContent = "Get ready... " + i;
+for (let i = 3; i > 0; i--) {
 
-    await new Promise(resolve =>
-      setTimeout(resolve, 800)
-    );
+  countdown.textContent = i;
 
-  }
+  await new Promise(resolve =>
+    setTimeout(resolve, 800)
+  );
+
+}
+
+countdown.textContent = "";
 
   // CANVAS SIZE
 
@@ -316,6 +375,14 @@ document.getElementById("capture").onclick = async () => {
 
   status.textContent = "Sending photo to Google Drive...";
 
+  // EXIT FULL SCREEN AFTER CAPTURE
+
+document.body.classList.remove("camera-fullscreen");
+
+if (document.fullscreenElement) {
+  await document.exitFullscreen();
+}
+  
   // SEND TO GOOGLE APPS SCRIPT
 
   if (!window.opener) {
