@@ -46,6 +46,7 @@ h1 {
   top: 0;
   object-fit: cover;
   transform: scaleX(-1);
+  pointer-events: none;
 }
 
 #frameOverlay {
@@ -141,13 +142,39 @@ button:disabled {
 
 /* BUTTON POSITION */
 
+
+/* BUTTON POSITION */
+
 #cameraStage button {
   position: absolute;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 5;
   margin: 0;
+  transform: translateX(-50%);
+}
+
+/* START CAMERA - LEFT */
+
+#cameraStage #start {
+  left: 25%;
+}
+
+/* TAKE PHOTO - RIGHT */
+
+#cameraStage #capture {
+  left: 75%;
+}
+
+/* HIDE START CAMERA IN FULLSCREEN */
+
+.camera-fullscreen #cameraStage #start {
+  display: none;
+}
+
+/* CENTER TAKE PHOTO IN FULLSCREEN */
+
+.camera-fullscreen #cameraStage #capture {
+  left: 50%;
 }
 
 /* HIDE START BUTTON AFTER CAMERA STARTS */
@@ -369,7 +396,7 @@ countdown.textContent = "";
 
   document.getElementById("photo").src = photoData;
 
-  document.getElementById("cameraArea").style.display = "none";
+  document.getElementById("cameraStage").style.display = "none";
 
   document.getElementById("result").style.display = "block";
 
@@ -445,11 +472,12 @@ window.addEventListener("message", event => {
 
 // NEXT GUEST
 
+
 document.getElementById("next").onclick = () => {
 
   document.getElementById("result").style.display = "none";
 
-  document.getElementById("cameraArea").style.display = "block";
+  document.getElementById("cameraStage").style.display = "block";
 
   document.getElementById("capture").disabled = false;
 
