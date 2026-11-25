@@ -473,7 +473,13 @@ window.addEventListener("message", event => {
 // NEXT GUEST
 
 
-document.getElementById("next").onclick = () => {
+document.getElementById("next").onclick = async () => {
+
+  document.body.classList.add("camera-fullscreen");
+
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
 
   document.getElementById("result").style.display = "none";
 
