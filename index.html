@@ -332,14 +332,9 @@ document.getElementById("capture").onclick = async () => {
 
   const countdown = document.getElementById("countdown");
 
-for (let i = 3; i > 0; i--) {
-
+for (let i = 5; i > 0; i--) {
   countdown.textContent = i;
-
-  await new Promise(resolve =>
-    setTimeout(resolve, 800)
-  );
-
+  await new Promise(resolve => setTimeout(resolve, 1000));
 }
 
 countdown.textContent = "";
